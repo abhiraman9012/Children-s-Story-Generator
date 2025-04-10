@@ -1,8 +1,7 @@
 # generators/prompt_generator.py
 import os
 import re
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from utils.api_utils import retry_api_call
 
 def generate_prompt(prompt_input="Create a children's story with a different animal character and a unique adventure theme. Be creative with the setting and storyline.", use_streaming=True):
@@ -43,16 +42,16 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
     """
 
     contents = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(text=enhanced_prompt_input),
-            ],
-        ),
+        {
+            "role": "user",
+            "parts": [
+                {"text": enhanced_prompt_input}
+            ]
+        }
     ]
-    generate_content_config = types.GenerateContentConfig(
-        response_mime_type="text/plain",
-    )
+    generate_content_config = {
+        "response_mime_type": "text/plain",
+    }
 
     print(f"ℹ️ Using Prompt Generator Model: {model}")
     print(f"📝 Using Input: {prompt_input}")
@@ -85,49 +84,46 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
                 config=generate_content_config,
             )
 
-            if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-                for part in response.candidates[0].content.parts:
-                    if hasattr(part, 'text') and part.text:
-                        print(part.text)
-                        generated_prompt += part.text
+            if hasattr(response, 'text'):
+                print("\n" + response.text)
+                generated_prompt = response.text
 
-        # Clean up the generated prompt to ensure it follows the required structure
+        # Clean up any whitespace
         generated_prompt = generated_prompt.strip()
 
-        # Remove any quotes that might be around the generated prompt
-        generated_prompt = generated_prompt.strip('"\'')
-
-        # For safety, verify the prompt has the correct structure
-        if not generated_prompt.startswith("Generate a story about"):
-            # Fallback to a properly structured prompt
-            print("⚠️ Generated prompt did not have correct structure, applying formatting fix")
-            # Extract character and setting if possible
-            parts = re.search(r'about\s+(.*?)\s+going\s+on\s+an\s+adventure\s+in\s+(.*?)(?:\s+in\s+a\s+3d|\.)',
-                             generated_prompt, re.IGNORECASE)
-
-            if parts:
-                character = parts.group(1)
-                setting = parts.group(2)
-            else:
-                # Default fallback
-                character = "a colorful chameleon"
-                setting = "a magical forest"
-
-            generated_prompt = f"Generate a story about {character} going on an adventure in {setting} in a highly detailed 3d cartoon animation style. For each scene, generate a high-quality, photorealistic image **in landscape orientation suitable for a widescreen (16:9 aspect ratio) YouTube video**. Ensure maximum detail, vibrant colors, and professional lighting."
-
-        # Make sure it ends with the correct format
-        if not "For each scene, generate an image" in generated_prompt:
-            generated_prompt = re.sub(r'\.\s*$', '', generated_prompt) + ". For each scene, generate a high-quality, photorealistic image **in landscape orientation suitable for a widescreen (16:9 aspect ratio) YouTube video**. Ensure maximum detail, vibrant colors, and professional lighting."
-
-        # Ensure the 16:9 aspect ratio requirement is present
-        if "16:9" not in generated_prompt:
-            generated_prompt = generated_prompt.replace("For each scene, generate an image",
-                                  "For each scene, generate a high-quality, photorealistic image **in landscape orientation suitable for a widescreen (16:9 aspect ratio) YouTube video**. Ensure maximum detail, vibrant colors, and professional lighting.")
-
-        print("\n✅ Prompt generation complete.")
-        print(f"Final generated prompt: {generated_prompt}")
+        # Validate the response format
+        # It should start with "Generate a story about" and contain both [animal character] and [setting] replaced
+        if "Generate a story about" not in generated_prompt or "going on an adventure in" not in generated_prompt:
+            print("⚠️ Generated prompt doesn't match expected format")
+            # Try to extract with regex if possible
+            match = re.search(r'\"(.+?)\"', generated_prompt)
+            if match:
+                print("🔧 Extracting from quotes...")
+                generated_prompt = match.group(1)
+            
+            if "Generate a story about" not in generated_prompt:
+                print("⚠️ Still can't find expected format, generating fallback prompt...")
+                return generate_fallback_prompt(prompt_input)
+        
+        print("\n✅ Prompt generation complete")
         return generated_prompt
 
     except Exception as e:
-        print(f"🔴 Error generating prompt: {e}")
-        return None
+        print(f"⚠️ Error generating prompt: {e}")
+        return generate_fallback_prompt(prompt_input)
+
+def generate_fallback_prompt(prompt_input):
+    """Generate a fallback prompt when AI generation fails."""
+    import random
+    
+    animals = ["fox", "bear", "rabbit", "elephant", "tiger", "penguin", "koala", "turtle", "lion", "dolphin"]
+    settings = ["enchanted forest", "snowy mountain", "deep ocean", "outer space", "desert oasis", 
+                "ancient castle", "tropical island", "underwater cave", "cloud city", "magical garden"]
+    
+    animal = random.choice(animals)
+    setting = random.choice(settings)
+    
+    fallback_prompt = f"Generate a story about a clever {animal} going on an adventure in a {setting} in a highly detailed 3d cartoon animation style. For each scene, generate a high-quality, photorealistic image for each scene 3d images **in landscape orientation suitable for a widescreen (16:9 aspect ratio) YouTube video**. Ensure maximum detail, vibrant colors, and professional lighting."
+    
+    print(f"🔄 Using fallback prompt with {animal} in {setting}")
+    return fallback_prompt

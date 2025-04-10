@@ -6,8 +6,7 @@ import tempfile
 import time
 import threading
 import traceback
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 # Import display functions - handle both IPython and non-IPython environments
 try:
     from IPython import get_ipython
@@ -186,18 +185,18 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
     # --- End Modified Prompt ---
 
     contents = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(text=prompt_text),
+        {
+            "role": "user",
+            "parts": [
+                {"text": prompt_text},
             ],
-        ),
+        },
     ]
-    generate_content_config = types.GenerateContentConfig(
-        response_modalities=["image", "text"],
-        response_mime_type="text/plain",
-        safety_settings=safety_settings,
-    )
+    generate_content_config = {
+        "response_modalities": ["image", "text"],
+        "response_mime_type": "text/plain",
+        "safety_settings": safety_settings,
+    }
 
     print(f"ℹ️ Using Model: {model}")
     print(f"📝 Using Prompt: {prompt_text}") # Show the modified prompt
@@ -248,13 +247,13 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
                     print("Using non-streaming response instead")
                     image_found = False
 
-                    if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-                        for part in response.candidates[0].content.parts:
-                            if hasattr(part, 'inline_data') and part.inline_data:
+                    if response and 'candidates' in response and response['candidates'] and response['candidates'][0] and 'content' in response['candidates'][0] and response['candidates'][0]['content'] and 'parts' in response['candidates'][0]['content']:
+                        for part in response['candidates'][0]['content']['parts']:
+                            if 'inline_data' in part and part['inline_data']:
                                 image_found = True
-                                inline_data = part.inline_data
-                                image_data = inline_data.data
-                                mime_type = inline_data.mime_type
+                                inline_data = part['inline_data']
+                                image_data = inline_data['data']
+                                mime_type = inline_data['mime_type']
 
                                 # Save image to a temporary file
                                 img_path = os.path.join(temp_dir, f"image_{len(image_files)}.jpg")
@@ -273,9 +272,9 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
                                     # For debugging, could also show image dimensions and type
                                     print(f"Image type: {image.format}, Mode: {image.mode}, Size: {image.size}")
                                 print("--- End Image ---\n")
-                            elif hasattr(part, 'text') and part.text:
-                                print(part.text)
-                                story_text += part.text
+                            elif 'text' in part and part['text']:
+                                print(part['text'])
+                                story_text += part['text']
 
                     # Skip the streaming loop since we already processed the response
                     print("✅ Non-streaming processing complete.")
@@ -399,10 +398,10 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
                                 config=generate_content_config,
                             )
 
-                            if response.candidates and response.candidates[0].content:
-                                for part in response.candidates[0].content.parts:
-                                    if hasattr(part, 'text') and part.text:
-                                        story_text += part.text
+                            if response and 'candidates' in response and response['candidates'] and response['candidates'][0] and 'content' in response['candidates'][0] and response['candidates'][0]['content']:
+                                for part in response['candidates'][0]['content']['parts']:
+                                    if 'text' in part and part['text']:
+                                        story_text += part['text']
 
                             print("✅ Non-streaming fallback successful")
                         except Exception as fallback_error:

@@ -29,12 +29,12 @@ def retry_api_call(retry_function, *args, **kwargs):
                     # Check if the result contains "**Image Description:**" which indicates
                     # the model generated text descriptions instead of actual images
 
-                    # For non-streaming responses
-                    if hasattr(result, 'candidates') and result.candidates:
-                        for candidate in result.candidates:
-                            if hasattr(candidate, 'content') and candidate.content:
-                                for part in candidate.content.parts:
-                                    if hasattr(part, 'text') and part.text and "**Image Description:**" in part.text:
+                    # For non-streaming responses in 0.8.4 version
+                    if isinstance(result, dict) and 'candidates' in result and result['candidates']:
+                        for candidate in result['candidates']:
+                            if isinstance(candidate, dict) and 'content' in candidate and candidate['content']:
+                                for part in candidate['content'].get('parts', []):
+                                    if isinstance(part, dict) and 'text' in part and "**Image Description:**" in part['text']:
                                         print(f"⚠️ Model generated text descriptions instead of images on attempt {attempt}, retrying in {retry_delay} seconds...")
                                         time.sleep(retry_delay)
                                         continue
@@ -51,12 +51,37 @@ def retry_api_call(retry_function, *args, **kwargs):
                 if result is not None:
                     print(f"✅ API call successful on attempt {attempt}")
                     return result
-
+                else:
+                    print(f"⚠️ API returned None on attempt {attempt}, retrying in {retry_delay} seconds...")
+        
         except Exception as e:
-            print(f"🔴 API error on attempt {attempt}: {e}")
-
-        print(f"🔄 Retrying in {retry_delay} seconds...")
+            print(f"⚠️ API error on attempt {attempt}: {e}")
+            
+            # Handle various API errors with appropriate retry logic
+            if "500 Internal Server Error" in str(e):
+                print(f"⚠️ Server error (500), retrying in {retry_delay} seconds...")
+            elif "503 Service Unavailable" in str(e):
+                print(f"⚠️ Service unavailable (503), retrying in {retry_delay} seconds...")
+            elif "429 Too Many Requests" in str(e):
+                print(f"⚠️ Rate limited (429), waiting longer before retry...")
+                # Wait longer for rate limit errors
+                time.sleep(retry_delay * 2)
+                continue
+            elif "400 Bad Request" in str(e):
+                print(f"⚠️ Bad request (400), may be an issue with prompt. Retrying anyway...")
+            elif "ResourceExhausted" in str(e):
+                print(f"⚠️ Resource exhausted, retrying in {retry_delay} seconds...")
+            elif "grpc" in str(e).lower() or "deadline exceeded" in str(e).lower():
+                print(f"⚠️ GRPC communication error, retrying in {retry_delay} seconds...")
+            elif "model not found" in str(e).lower():
+                print(f"⚠️ Model not found, check model name. Retrying in {retry_delay} seconds...")
+            elif "content_blocked" in str(e).lower() or "blocked_reason" in str(e).lower():
+                print(f"⚠️ Content blocked by safety settings. Adjusting request and retrying...")
+            else:
+                print(f"⚠️ Unknown error, retrying in {retry_delay} seconds...")
+                
+        # Wait before retrying
         time.sleep(retry_delay)
-
-    print(f"⚠️ Maximum consecutive failures ({max_consecutive_failures}) reached. Giving up.")
+    
+    print(f"❌ Failed after {max_consecutive_failures} attempts")
     return None
