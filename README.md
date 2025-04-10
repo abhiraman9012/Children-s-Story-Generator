@@ -129,49 +129,21 @@ Copy and paste the following code into a Google Colab notebook cell to set up an
 
 ## 🧠 Architecture & Code Flow
 
-### Interactive Process Flow Diagram
+### Visual Architecture Diagram
 
-```mermaid
-flowchart TD
-    A[Start] --> B[Google Drive API Test]
-    B -->|Success| C[Initialize Gemini Client]
-    B -->|Failure| C1[Continue with Limited Functionality]
-    C --> D[Generate Creative Prompt]
-    D --> E[Generate Story with Images]
-    
-    subgraph story_generation [Story Generation]
-        E1[Use Gemini for Story Generation] --> E2{Check for Images}
-        E2 -->|No Images| E3[Retry Story Generation]
-        E2 -->|Has Images| E4[Extract Story Text]
-        E3 --> E1
-        E4 --> E5[Collect Complete Story]
-    end
-    
-    E --> F[Generate Audio]
-    
-    subgraph audio_generation [Audio Generation]
-        F1[Initialize Kokoro TTS] --> F2[Convert Story to Speech]
-        F2 --> F3[Process Audio Chunks]
-        F3 --> F4[Save Complete Audio]
-    end
-    
-    F --> G[Create Video]
-    
-    subgraph video_generation [Video Creation]
-        G1[Resize Images] --> G2[Calculate Frame Duration]
-        G2 --> G3[Create FFMPEG Command]
-        G3 --> G4[Apply Visual Effects]
-        G4 --> G5[Execute FFMPEG]
-    end
-    
-    G --> H[Generate SEO Metadata]
-    H --> I[Create Thumbnail]
-    I --> J[Upload to Google Drive]
-    J -->|Success| K[Display Share URL]
-    J -->|Failure| L[Offer Direct Download]
-    K --> M[End]
-    L --> M
-```
+<div align="center">
+  <img src="architecture_diagram.png" alt="Children's Story Generator Architecture" width="100%">
+</div>
+
+*High-resolution diagram of the Children's Story Generator Architecture*
+
+### Detailed Static Architecture
+
+<div align="center">
+  <img src="architecture_diagram_static.png" alt="Detailed Component Architecture" width="100%">
+</div>
+
+*Component-level view showing all data flows between system elements*
 
 ### Detailed Data Flow Diagram
 
