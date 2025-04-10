@@ -64,7 +64,10 @@ jobs:
           # GEMINI_API_KEY is already set in the environment or hardcoded in settings.py
         run: |
           echo "Running for ${DURATION_HOURS} hours or until ${STORIES_COUNT} stories are generated (0 = unlimited)"
-          python -c "import sys; print(f'Python version: {sys.version}'); import pkg_resources; print(f'google-generativeai version: {pkg_resources.get_distribution(\'google-generativeai\').version}');"
+          # Check Python and package versions
+          python -c "import sys; print('Python version:', sys.version)"
+          python -c "import google.generativeai as genai; print('Google Generative AI version:', genai.__version__)"
+          # Run the continuous generator
           python continuous_runner.py --duration $DURATION_HOURS --count $STORIES_COUNT
           
       - name: Upload generated content
