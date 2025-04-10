@@ -78,13 +78,11 @@ def retry_story_generation(use_prompt_generator=True, prompt_input="Create a uni
                 print(f"⚠️ Insufficient images: {len(results['image_files'])} (need at least 6)")
                 return False
             
-            # NEW: Check if video was successfully generated
-            if results["output_path"] and os.path.exists(results["output_path"]):
-                print(f"✅ Video successfully generated: {results['output_path']}")
-                # Note: We don't need to check for a flag file anymore since we use sys.exit()
-                # after successful Google Drive upload
-                
-            # If we get here, generation was successful
+            # We don't need to check for output_path anymore - we're only validating story and images here
+            # If we have enough story segments and images, mark as successful
+            # The audio/video generation will happen in main.py after this function returns
+            
+            # If we get here, story and image generation was successful
             success = True
             return True
         except Exception as e:
@@ -108,17 +106,17 @@ def retry_story_generation(use_prompt_generator=True, prompt_input="Create a uni
             # but will capture its outputs for our status checks
             result = generate(use_prompt_generator=use_prompt_generator, prompt_input=prompt_input)
             
-            # Capture variables from the generate function's scope if possible
-            if 'story_text' in locals() and locals()['story_text']:
-                results["story_text"] = locals()['story_text']
-            if 'image_files' in locals() and locals()['image_files']:
-                results["image_files"] = locals()['image_files']
-            if 'output_path' in locals() and locals()['output_path']:
-                results["output_path"] = locals()['output_path']
-            if 'thumbnail_path' in locals() and locals()['thumbnail_path']:
-                results["thumbnail_path"] = locals()['thumbnail_path']
-            if 'metadata' in locals() and locals()['metadata']:
-                results["metadata"] = locals()['metadata']
+            # Directly use the returned dictionary from generate
+            if result and isinstance(result, dict):
+                # Update our results with what came back from generate
+                if 'story_text' in result and result['story_text']:
+                    results["story_text"] = result['story_text']
+                if 'image_files' in result and result['image_files']:
+                    results["image_files"] = result['image_files']
+                if 'temp_dir' in result and result['temp_dir']:
+                    results["temp_dir"] = result['temp_dir']
+                if 'prompt_text' in result and result['prompt_text']:
+                    results["prompt_text"] = result['prompt_text']
                 
             # Check if generation was successful
             check_generation_status()
