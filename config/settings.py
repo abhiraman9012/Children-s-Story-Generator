@@ -9,12 +9,21 @@ def get_api_key():
     # Get the environment variable containing the API key(s)
     api_keys_env = os.environ.get("GEMINI_API_KEY", "")
     
-    # No API key found
+    # If no API key in environment, use the hardcoded list as fallback
     if not api_keys_env:
-        raise ValueError("No API key found in GEMINI_API_KEY environment variable.")
-    
-    # Split by commas if multiple keys are provided
-    api_keys = [key.strip() for key in api_keys_env.split(",") if key.strip()]
+        print("⚠️ No API key found in GEMINI_API_KEY environment variable, using fallback keys")
+        api_keys = [
+            "AIzaSyAqbqE86FKFXS6t5qrpXJVj9jAf-arQ1Js",
+            "AIzaSyDVmSA9ricHVEzo6v1gj-crkuaJvQD72yw",
+            "AIzaSyDNeeKDXnwGF7MYhFrnFoD9VL-ecvO5mEE",
+            "AIzaSyAHvAdcSoRmeXB9xJjvvdXKtXw3dHSmJiQ",
+            "AIzaSyC_XqbLjFQnLXfo26J-RX_WDx59H4ql9Qs",
+            "AIzaSyC8FuTNC3FxLs0Qx2ciRoLwxjOrLGqOB5A",
+            "AIzaSyBL8KngLHXOY0rSk5R4awta1tfDl6xC8rM"
+        ]
+    else:
+        # Split by commas if multiple keys are provided
+        api_keys = [key.strip() for key in api_keys_env.split(",") if key.strip()]
     
     # Count available keys
     key_count = len(api_keys)

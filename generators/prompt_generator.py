@@ -2,6 +2,7 @@
 import os
 import re
 import google.generativeai as genai
+import random
 from utils.api_utils import retry_api_call
 
 def generate_prompt(prompt_input="Create a children's story with a different animal character and a unique adventure theme. Be creative with the setting and storyline.", use_streaming=True):
@@ -57,8 +58,8 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
 
         generated_prompt = ""
 
-        try:
-            if use_streaming:
+        if use_streaming:
+            try:
                 print("⏳ Generating prompt via streaming API...")
                 stream = model.generate_content_stream(
                     contents=contents,
@@ -74,7 +75,14 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
                     except Exception as e:
                         print(f"⚠️ Error processing prompt chunk: {e}")
                         continue
-            else:
+            except Exception as stream_err:
+                print(f"⚠️ Error with streaming API: {stream_err}")
+                print("🔄 Falling back to non-streaming API...")
+                use_streaming = False
+
+        # If not using streaming or streaming failed
+        if not use_streaming:
+            try:
                 print("⏳ Generating prompt via non-streaming API...")
                 response = model.generate_content(
                     contents=contents,
@@ -84,35 +92,36 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
                 if hasattr(response, 'text'):
                     print("\n" + response.text)
                     generated_prompt = response.text
+            except Exception as non_stream_err:
+                print(f"⚠️ Error with non-streaming API: {non_stream_err}")
+                return generate_fallback_prompt(prompt_input)
 
-            # Clean up any whitespace
-            generated_prompt = generated_prompt.strip()
+        # Clean up any whitespace
+        generated_prompt = generated_prompt.strip()
 
-            # Validate the response format
-            # It should start with "Generate a story about" and contain both [animal character] and [setting] replaced
-            if "Generate a story about" not in generated_prompt or "going on an adventure in" not in generated_prompt:
-                print("⚠️ Generated prompt doesn't match expected format")
-                # Try to extract with regex if possible
-                match = re.search(r'\"(.+?)\"', generated_prompt)
-                if match:
-                    print("🔧 Extracting from quotes...")
-                    generated_prompt = match.group(1)
-                
-                if "Generate a story about" not in generated_prompt:
-                    print("⚠️ Still can't find expected format, generating fallback prompt...")
-                    return generate_fallback_prompt(prompt_input)
+        # Validate the response format
+        # It should start with "Generate a story about" and contain both [animal character] and [setting] replaced
+        if "Generate a story about" not in generated_prompt or "going on an adventure in" not in generated_prompt:
+            print("⚠️ Generated prompt doesn't match expected format")
+            # Try to extract with regex if possible
+            match = re.search(r'\"(.+?)\"', generated_prompt)
+            if match:
+                print("🔧 Extracting from quotes...")
+                generated_prompt = match.group(1)
             
-            print("\n✅ Prompt generation complete")
-            return generated_prompt
+            if "Generate a story about" not in generated_prompt:
+                print("⚠️ Still can't find expected format, generating fallback prompt...")
+                return generate_fallback_prompt(prompt_input)
+        
+        print("\n✅ Prompt generation complete")
+        return generated_prompt
 
-        except Exception as e:
-            print(f"⚠️ Error generating prompt: {e}")
-            return generate_fallback_prompt(prompt_input)
+    except Exception as e:
+        print(f"⚠️ Error in generate_prompt: {e}")
+        return generate_fallback_prompt(prompt_input)
 
 def generate_fallback_prompt(prompt_input):
     """Generate a fallback prompt when AI generation fails."""
-    import random
-    
     animals = ["fox", "bear", "rabbit", "elephant", "tiger", "penguin", "koala", "turtle", "lion", "dolphin"]
     settings = ["enchanted forest", "snowy mountain", "deep ocean", "outer space", "desert oasis", 
                 "ancient castle", "tropical island", "underwater cave", "cloud city", "magical garden"]
