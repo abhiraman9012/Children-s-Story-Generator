@@ -3,9 +3,8 @@ import os
 import re
 import google.generativeai as genai
 import random
-from utils.api_utils import retry_api_call
 
-def generate_prompt(prompt_input="Create a children's story with a different animal character and a unique adventure theme. Be creative with the setting and storyline.", use_streaming=True):
+def generate_prompt(prompt_input="Create a children's story with a different animal character and a unique adventure theme. Be creative with the setting and storyline.", use_streaming=False):
     """
     Generates a story prompt using the gemini-2.0-flash-thinking-exp-01-21 model.
 
@@ -49,8 +48,12 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
                 ]
             }
         ]
-        generate_content_config = {
-            "response_mime_type": "text/plain",
+
+        # Parameters for generation
+        generation_params = {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 64,
         }
 
         print(f"ℹ️ Using Prompt Generator Model: {model_name}")
@@ -58,16 +61,19 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
 
         generated_prompt = ""
 
+        # In version 0.8.4, streaming is handled differently
+        # Setting stream=True in generate_content
         if use_streaming:
             try:
                 print("⏳ Generating prompt via streaming API...")
-                stream = model.generate_content_stream(
+                response = model.generate_content(
                     contents=contents,
-                    config=generate_content_config,
+                    stream=True,
+                    **generation_params
                 )
 
                 print("--- Prompt Generation Stream ---")
-                for chunk in stream:
+                for chunk in response:
                     try:
                         if hasattr(chunk, 'text') and chunk.text:
                             print(chunk.text, end="")
@@ -86,7 +92,7 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
                 print("⏳ Generating prompt via non-streaming API...")
                 response = model.generate_content(
                     contents=contents,
-                    config=generate_content_config,
+                    **generation_params
                 )
 
                 if hasattr(response, 'text'):

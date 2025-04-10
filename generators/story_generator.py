@@ -203,10 +203,12 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
         ]
     }]
     
+    # Set up the generation parameters for version 0.8.4
     generate_params = {
-        "generation_config": {
-            "response_mime_types": ["image/jpeg", "text/plain"],
-        },
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 4096,
         "safety_settings": safety_settings,
     }
 
@@ -222,7 +224,7 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
         try:
             print("--- Using Streaming API for story generation ---")
             
-            # Generate content using the stream method
+            # Generate content using the stream method in version 0.8.4
             stream = model.generate_content(
                 contents,
                 stream=True,
