@@ -1,7 +1,7 @@
 # config/settings.py
 import os
 import random
-from google.genai import types
+import google.generativeai as genai
 
 # Setting API Key - randomly selecting from available keys
 # List of all available API keys
@@ -31,11 +31,11 @@ else:
     print(f"✅ Found API Key: ...{api_key_check[-4:]}")
 #------------------------
 
-# Define Safety Settings
+# Define Safety Settings - Adapted for google-generativeai 0.8.4
 safety_settings = [
-    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
 print(f"⚙️ Defined Safety Settings: {safety_settings}")
