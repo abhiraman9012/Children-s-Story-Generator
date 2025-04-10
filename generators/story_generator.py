@@ -23,7 +23,7 @@ import base64
 from utils.api_utils import retry_api_call
 from utils.media_utils import collect_complete_story
 from generators.prompt_generator import generate_prompt
-from config.settings import safety_settings
+from config.settings import safety_settings, get_api_key
 
 def retry_story_generation(use_prompt_generator=True, prompt_input="Create a unique children's story with a different animal character, setting, and adventure theme."):
     """
@@ -161,8 +161,14 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
     """
     # Initialize the Gemini client
     try:
+        # Import the get_api_key function from settings
+        from config.settings import get_api_key
+        
+        # Get API key from settings
+        api_key = get_api_key()
+        
         # Configure the API client with the API key
-        genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+        genai.configure(api_key=api_key)
         print("✅ Initialized genai with API key")
     except Exception as e:
         print(f"🔴 Error initializing genai configuration: {e}")

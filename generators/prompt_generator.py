@@ -3,6 +3,7 @@ import os
 import re
 import google.generativeai as genai
 import random
+from config.settings import get_api_key
 
 def generate_prompt(prompt_input="Create a children's story with a different animal character and a unique adventure theme. Be creative with the setting and storyline.", use_streaming=False):
     """
@@ -16,8 +17,11 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
         The generated prompt text or None if generation fails
     """
     try:
+        # Get API key from settings
+        api_key = get_api_key()
+        
         # Configure the API client with the API key
-        genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+        genai.configure(api_key=api_key)
         print("✅ Initialized genai with API key for prompt generation")
         
         # Create a generative model instance
