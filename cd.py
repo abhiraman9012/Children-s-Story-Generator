@@ -17,8 +17,7 @@ import subprocess
 import numpy as np
 import soundfile as sf
 import requests
-from google import genai
-from google.genai import types # Need types for Content/Part/Config/SafetySetting
+import google.generativeai as genai
 from IPython.display import display, Image, Audio, HTML
 from PIL import Image as PILImage
 from kokoro import KPipeline
@@ -210,12 +209,20 @@ else:
     print(f"✅ Found API Key: ...{api_key_check[-4:]}")
 #------------------------
 
-# Define Safety Settings
+# Initialize Google Generative AI
+try:
+    # Configure the API client with the API key - new method for 0.8.4
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    print("✅ Initialized genai with API key")
+except Exception as e:
+    print(f"⚠️ Error initializing genai: {e}")
+
+# Define Safety Settings - updated for 0.8.4
 safety_settings = [
-    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
-    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
 print(f"⚙️ Defined Safety Settings: {safety_settings}")
 
@@ -245,7 +252,7 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
     # Enhanced prompt input to ensure consistent structure with varied content
     enhanced_prompt_input = f"""
     Create a children's story prompt using EXACTLY this format:
-    "Generate a story about [animal character] going on an adventure in [setting] in a highly detailed 3d cartoon animation style. For each scene, generate a high-quality, photorealistic image for each scene 3d images **in landscape orientation suitable for a widescreen (16:9 aspect ratio) YouTube video**. Ensure maximum detail, vibrant colors, and professional lighting."
+    "Generate a story about [animal character] going on an adventure in [setting] in a highly detailed 3d cartoon animation style. For each scene, generate a high-quality, photorealistic image **in landscape orientation suitable for a widescreen (16:9 aspect ratio) YouTube video**. Ensure maximum detail, vibrant colors, and professional lighting."
 
     Replace [animal character] with any animal character (NOT a white baby goat named Pip).
     Replace [setting] with any interesting setting for the adventure.
@@ -258,14 +265,14 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
     """
 
     contents = [
-        types.Content(
+        genai.Content(
             role="user",
             parts=[
-                types.Part.from_text(text=enhanced_prompt_input),
+                genai.Part.from_text(text=enhanced_prompt_input),
             ],
         ),
     ]
-    generate_content_config = types.GenerateContentConfig(
+    generate_content_config = genai.GenerateContentConfig(
         response_mime_type="text/plain",
     )
 
@@ -572,14 +579,14 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
     # --- End Modified Prompt ---
 
     contents = [
-        types.Content(
+        genai.Content(
             role="user",
             parts=[
-                types.Part.from_text(text=prompt_text),
+                genai.Part.from_text(text=prompt_text),
             ],
         ),
     ]
-    generate_content_config = types.GenerateContentConfig(
+    generate_content_config = genai.GenerateContentConfig(
         response_modalities=["image", "text"],
         response_mime_type="text/plain",
         safety_settings=safety_settings,
@@ -1059,10 +1066,10 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
 
                     # Retry with the enhanced prompt
                     retry_contents = [
-                        types.Content(
+                        genai.Content(
                             role="user",
                             parts=[
-                                types.Part.from_text(text=enhanced_prompt),
+                                genai.Part.from_text(text=enhanced_prompt),
                             ],
                         ),
                     ]
@@ -1766,10 +1773,10 @@ def generate_seo_metadata(story_text, image_files, prompt_text):
     """
 
     contents = [
-        types.Content(
+        genai.Content(
             role="user",
             parts=[
-                types.Part.from_text(text=seo_prompt),
+                genai.Part.from_text(text=seo_prompt),
             ],
         ),
     ]

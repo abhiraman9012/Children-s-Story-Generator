@@ -19,101 +19,82 @@ def generate_seo_metadata(story_text, image_files, prompt_text):
         Dictionary containing title, description, and tags
     """
     try:
-        client = genai.Client(
-            api_key=os.environ.get("GEMINI_API_KEY"),
-        )
-        print("✅ Initializing SEO metadata generator client...")
-    except Exception as e:
-        print(f"🔴 Error initializing SEO metadata generator client: {e}")
-        return default_seo_metadata(story_text, prompt_text)
+        # Configure the API client with the API key
+        genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+        print("✅ Initialized genai with API key for SEO metadata generation")
+        
+        # Create a generative model instance
+        model_name = "gemini-2.0-flash-thinking-exp-01-21"
+        model = genai.GenerativeModel(model_name)
+        print(f"✅ Created generative model: {model_name}")
+        
+        # Extract the first 1000 characters to give the model a sense of the story
+        story_preview = story_text[:1000] + "..." if len(story_text) > 1000 else story_text
 
-    # Use the same model as prompt generation for metadata
-    model = "gemini-2.0-flash-thinking-exp-01-21"
+        # Create prompt for SEO metadata generation
+        seo_prompt = f"""
+        I need to create SEO-friendly metadata for a children's story video.
 
-    # Extract the first 1000 characters to give the model a sense of the story
-    story_preview = story_text[:1000] + "..." if len(story_text) > 1000 else story_text
+        Here is a preview of the story:
+        ```
+        {story_preview}
+        ```
 
-    # Create prompt for SEO metadata generation
-    seo_prompt = f"""
-    I need to create SEO-friendly metadata for a children's story video.
+        Original prompt that generated this story:
+        ```
+        {prompt_text}
+        ```
 
-    Here is a preview of the story:
-    ```
-    {story_preview}
-    ```
+        Please generate the following in JSON format:
+        1. A catchy, keyword-rich title (max 60 characters)
+        2. An engaging description that summarizes the story (100-300 characters)
+        3. A list of 10-15 relevant tags for YouTube SEO
 
-    Original prompt that generated this story:
-    ```
-    {prompt_text}
-    ```
+        Format your response ONLY as a valid JSON object with keys: "title", "description", and "tags" (as an array).
+        """
 
-    Please generate the following in JSON format:
-    1. A catchy YouTube-style title (max 60 characters) that will attract families with children
-    2. An engaging description (150-300 words) that describes the story, mentions key moments, and includes relevant keywords
-    3. A list of 10-15 tags relevant to the content (children's stories, animation, etc.)
+        try:
+            # Generate metadata using the Gemini model
+            contents = [{
+                "role": "user",
+                "parts": [
+                    {"text": seo_prompt}
+                ]
+            }]
 
-    Format your response ONLY as a valid JSON object with keys: "title", "description", and "tags" (as an array).
-    """
+            # Make API call
+            response = model.generate_content(contents)
 
-    try:
-        # Generate metadata using the Gemini model
-        contents = [{
-            "role": "user",
-            "parts": [
-                {"text": seo_prompt}
-            ]
-        }]
-
-        # Configure response parameters
-        generate_content_config = {
-            "temperature": 0.2,  # More deterministic
-            "top_p": 0.95,
-            "top_k": 64,
-            "max_output_tokens": 2048,
-            "safety_settings": [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
-            ],
-        }
-
-        # Make API call
-        response = client.models.generate_content(
-            model=model,
-            contents=contents,
-            config=generate_content_config,
-        )
-
-        # Process the response
-        if response and 'candidates' in response and response['candidates'] and 'content' in response['candidates'][0]:
-            response_text = ''
-            for part in response['candidates'][0]['content']['parts']:
-                if 'text' in part:
-                    response_text += part['text']
-            
-            # Extract JSON from the response
-            json_match = re.search(r'{.*}', response_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                metadata = json.loads(json_str)
+            # Process the response
+            if hasattr(response, 'text'):
+                response_text = response.text
                 
-                # Ensure all expected fields are present
-                if not all(key in metadata for key in ["title", "description", "tags"]):
-                    print("⚠️ Generated metadata is missing required fields, using fallback")
+                # Extract JSON from the response
+                json_match = re.search(r'{.*}', response_text, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                    metadata = json.loads(json_str)
+                    
+                    # Ensure all expected fields are present
+                    if not all(key in metadata for key in ["title", "description", "tags"]):
+                        print("⚠️ Generated metadata is missing required fields, using fallback")
+                        return default_seo_metadata(story_text, prompt_text)
+                    
+                    print("✅ Successfully generated SEO metadata")
+                    return metadata
+                else:
+                    print("⚠️ Could not extract JSON from response, using fallback")
                     return default_seo_metadata(story_text, prompt_text)
-                
-                print("✅ Successfully generated SEO metadata")
-                return metadata
             else:
-                print("⚠️ Could not extract JSON from response, using fallback")
+                print("⚠️ Invalid response format from metadata generation, using fallback")
                 return default_seo_metadata(story_text, prompt_text)
-        else:
-            print("⚠️ Invalid response format from metadata generation, using fallback")
+                
+        except Exception as e:
+            print(f"🔴 Error in metadata generation: {e}")
             return default_seo_metadata(story_text, prompt_text)
             
     except Exception as e:
-        print(f"🔴 Error in metadata generation: {e}")
+        print(f"🔴 Error initializing SEO metadata generator: {e}")
         return default_seo_metadata(story_text, prompt_text)
 
 def default_seo_metadata(story_text, prompt_text):
