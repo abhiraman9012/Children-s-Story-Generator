@@ -105,6 +105,30 @@ The application will:
 
 [MIT License](LICENSE)
 
+## Run on Google Colab
+
+Copy and paste the following code into a Google Colab notebook cell to set up and run this project:
+
+```python
+# Clone the repository
+!git clone https://github.com/abhiraman9012/Children-s-Story-Generator.git
+%cd Children-s-Story-Generator
+
+# Install required dependencies
+!pip install -r requirements.txt
+
+# Install FFmpeg (required for video generation)
+!apt-get update
+!apt-get install -y ffmpeg
+
+# Set your Gemini API Key (replace with your actual key)
+import os
+os.environ["GEMINI_API_KEY"] = "your-api-key-here"
+
+# Run the application
+!python main.py
+```
+
 ## Acknowledgments
 
 - Google Gemini models for AI content generation
