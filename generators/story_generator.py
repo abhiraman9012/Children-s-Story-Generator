@@ -8,7 +8,18 @@ import threading
 import traceback
 from google import genai
 from google.genai import types
-from IPython.display import display, Image
+# Import display functions - handle both IPython and non-IPython environments
+try:
+    from IPython import get_ipython
+    from IPython.display import display, Image as IPythonImage
+    # Check if we're in IPython/Jupyter environment
+    in_notebook = get_ipython() is not None
+except ImportError:
+    in_notebook = False
+    
+from PIL import Image as PILImage
+import io
+import base64
 
 from utils.api_utils import retry_api_call
 from utils.media_utils import collect_complete_story
@@ -254,7 +265,15 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
                                 image_files.append(img_path)
 
                                 print(f"\n\n🖼️ --- Image Received ({mime_type}) ---")
-                                display(Image(data=image_data))
+                                # Display image differently based on environment
+                                if in_notebook:
+                                    display(IPythonImage(data=image_data))
+                                else:
+                                    # For non-notebook environments, save and inform user
+                                    image = PILImage.open(io.BytesIO(image_data))
+                                    print(f"Image saved to {img_path} - {image.width}x{image.height}")
+                                    # For debugging, could also show image dimensions and type
+                                    print(f"Image type: {image.format}, Mode: {image.mode}, Size: {image.size}")
                                 print("--- End Image ---\n")
                             elif hasattr(part, 'text') and part.text:
                                 print(part.text)
@@ -335,7 +354,15 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
                                 image_files.append(img_path)
 
                                 print(f"\n\n🖼️ --- Image Received ({mime_type}) ---")
-                                display(Image(data=image_data))
+                                # Display image differently based on environment
+                                if in_notebook:
+                                    display(IPythonImage(data=image_data))
+                                else:
+                                    # For non-notebook environments, save and inform user
+                                    image = PILImage.open(io.BytesIO(image_data))
+                                    print(f"Image saved to {img_path} - {image.width}x{image.height}")
+                                    # For debugging, could also show image dimensions and type
+                                    print(f"Image type: {image.format}, Mode: {image.mode}, Size: {image.size}")
                                 print("--- End Image ---\n")
                             elif hasattr(part,'text') and part.text:
                                 print(part.text, end="")
