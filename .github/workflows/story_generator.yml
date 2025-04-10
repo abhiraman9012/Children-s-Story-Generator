@@ -40,8 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Explicitly install google-generativeai at version 0.2.1 to match the code imports
-          pip install google-generativeai==0.2.1
+          # Do not override the version in requirements.txt
       
       - name: Set up environment secrets
         env:
@@ -49,10 +48,10 @@ jobs:
         run: |
           # Check if GEMINI_API_KEY is set from secrets
           if [ -z "$GEMINI_API_KEY" ]; then
-            echo "⚠️ Warning: GEMINI_API_KEY is not set from secrets."
+            echo " Warning: GEMINI_API_KEY is not set from secrets."
             echo "Using hardcoded API key from config/settings.py"
           else
-            echo "✅ GEMINI_API_KEY is set from secrets."
+            echo " GEMINI_API_KEY is set from secrets."
             echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> $GITHUB_ENV
           fi
           
