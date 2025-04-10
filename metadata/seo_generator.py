@@ -3,8 +3,7 @@ import os
 import re
 import json
 import datetime
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from PIL import Image, ImageDraw, ImageFont
 
 def generate_seo_metadata(story_text, image_files, prompt_text):
@@ -56,54 +55,65 @@ def generate_seo_metadata(story_text, image_files, prompt_text):
     Format your response ONLY as a valid JSON object with keys: "title", "description", and "tags" (as an array).
     """
 
-    contents = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(text=seo_prompt),
-            ],
-        ),
-    ]
-
-    print("⏳ Generating SEO-friendly metadata...")
-
     try:
+        # Generate metadata using the Gemini model
+        contents = [{
+            "role": "user",
+            "parts": [
+                {"text": seo_prompt}
+            ]
+        }]
+
+        # Configure response parameters
+        generate_content_config = {
+            "temperature": 0.2,  # More deterministic
+            "top_p": 0.95,
+            "top_k": 64,
+            "max_output_tokens": 2048,
+            "safety_settings": [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+            ],
+        }
+
+        # Make API call
         response = client.models.generate_content(
             model=model,
             contents=contents,
+            config=generate_content_config,
         )
 
-        if response.candidates and response.candidates[0].content:
-            response_text = ""
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, 'text') and part.text:
-                    response_text += part.text
-
-            # Extract the JSON data from the response
-            # First, try to find JSON within markdown code blocks
-            import re
-            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response_text)
+        # Process the response
+        if response and 'candidates' in response and response['candidates'] and 'content' in response['candidates'][0]:
+            response_text = ''
+            for part in response['candidates'][0]['content']['parts']:
+                if 'text' in part:
+                    response_text += part['text']
+            
+            # Extract JSON from the response
+            json_match = re.search(r'{.*}', response_text, re.DOTALL)
             if json_match:
-                json_str = json_match.group(1)
-            else:
-                # If no markdown code blocks, try to extract the entire response
-                json_str = response_text
-
-            # Parse the JSON data
-            try:
+                json_str = json_match.group(0)
                 metadata = json.loads(json_str)
-                # Validate the metadata
-                if not all(key in metadata for key in ['title', 'description', 'tags']):
-                    print("⚠️ Metadata is missing required fields, using fallback...")
+                
+                # Ensure all expected fields are present
+                if not all(key in metadata for key in ["title", "description", "tags"]):
+                    print("⚠️ Generated metadata is missing required fields, using fallback")
                     return default_seo_metadata(story_text, prompt_text)
-
-                print("✅ SEO metadata generated successfully")
+                
+                print("✅ Successfully generated SEO metadata")
                 return metadata
-            except json.JSONDecodeError:
-                print("⚠️ Failed to parse metadata as JSON, using fallback...")
+            else:
+                print("⚠️ Could not extract JSON from response, using fallback")
                 return default_seo_metadata(story_text, prompt_text)
+        else:
+            print("⚠️ Invalid response format from metadata generation, using fallback")
+            return default_seo_metadata(story_text, prompt_text)
+            
     except Exception as e:
-        print(f"⚠️ Error generating SEO metadata: {e}")
+        print(f"🔴 Error in metadata generation: {e}")
         return default_seo_metadata(story_text, prompt_text)
 
 def default_seo_metadata(story_text, prompt_text):
