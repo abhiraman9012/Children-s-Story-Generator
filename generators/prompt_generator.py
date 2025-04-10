@@ -51,9 +51,11 @@ def generate_prompt(prompt_input="Create a children's story with a different ani
 
         # Parameters for generation
         generation_params = {
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 64,
+            "generation_config": {
+                "temperature": 0.7,
+                "top_p": 0.95,
+                "top_k": 64,
+            }
         }
 
         print(f"ℹ️ Using Prompt Generator Model: {model_name}")
