@@ -40,21 +40,31 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # Explicitly install google-generativeai to fix import issues
+          pip install google-generativeai>=0.3.0
       
       - name: Set up environment secrets
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> $GITHUB_ENV
+          # Check if GEMINI_API_KEY is set from secrets
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "⚠️ Warning: GEMINI_API_KEY is not set from secrets."
+            echo "Using hardcoded API key from config/settings.py"
+          else
+            echo "✅ GEMINI_API_KEY is set from secrets."
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> $GITHUB_ENV
+          fi
           
       - name: Run continuous story generator
         env:
           # If triggered manually, use the input values; otherwise use scheduled values
           DURATION_HOURS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.duration || '2.34' }}
           STORIES_COUNT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.stories_count || '0' }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # GEMINI_API_KEY is already set in the environment or hardcoded in settings.py
         run: |
           echo "Running for ${DURATION_HOURS} hours or until ${STORIES_COUNT} stories are generated (0 = unlimited)"
+          python -c "import sys; print(f'Python version: {sys.version}'); import pkg_resources; print(f'google-generativeai version: {pkg_resources.get_distribution(\'google-generativeai\').version}');"
           python continuous_runner.py --duration $DURATION_HOURS --count $STORIES_COUNT
           
       - name: Upload generated content
