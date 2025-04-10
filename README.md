@@ -137,13 +137,18 @@ This project can be run continuously using GitHub Actions to generate multiple s
    - Go to your GitHub repository → Settings → Secrets and variables → Actions
    - Add a new repository secret named `GEMINI_API_KEY` with your Google Gemini API key
 
-2. **Run the Workflow**
+2. **Automated Daily Runs**
+   - The workflow is configured to run automatically every day at midnight UTC
+   - Each run will continue for exactly 2 hours and 34 minutes
+   - No manual intervention required
+
+3. **Manual Trigger (Optional)**
    - Go to the Actions tab in your repository
    - Select "Continuous Story Generator" workflow
    - Click "Run workflow"
    - Configure parameters:
-     - **Duration**: Number of hours to run (0 for unlimited until GitHub's 6-hour timeout)
-     - **Stories Count**: Number of stories to generate (0 for unlimited)
+     - **Duration**: Number of hours to run (default: 2.34 hours)
+     - **Stories Count**: Number of stories to generate (default: unlimited)
 
 3. **Access Generated Content**
    - After the workflow completes, go to the workflow run
@@ -153,20 +158,23 @@ This project can be run continuously using GitHub Actions to generate multiple s
 ### How It Works
 
 The GitHub Actions workflow:
-1. Sets up a Python environment with all dependencies
-2. Installs FFmpeg for video processing
-3. Runs the `continuous_runner.py` script which:
+1. **Automatic Scheduling**: Runs daily at midnight UTC
+2. **Precise Duration Control**: Runs for exactly 2 hours and 34 minutes
+3. **Environment Setup**: Configures Python with all dependencies and FFmpeg
+4. **Continuous Generation**: Executes the `continuous_runner.py` script which:
    - Generates stories in a loop
+   - Handles fractional hours precisely (e.g., 2.34 = 2h 20m 24s)
    - Saves all content to organized directories
    - Tracks statistics for each generation
-   - Continues until the specified time or count is reached
+   - Continues until time limit is reached
 
 ### Customizing
 
 You can modify `.github/workflows/story_generator.yml` to:
-- Change the runner type (e.g., for higher performance)
+- Adjust the schedule timing (currently set to `0 0 * * *` for midnight UTC)
+- Change the run duration (currently 2h 34m)
+- Use different runner types (e.g., for higher performance)
 - Add additional environment variables
-- Configure different schedules (e.g., run daily)
 - Integrate with other services like AWS S3 for storage
 
 ## 🧠 Architecture & Code Flow

@@ -74,9 +74,9 @@ def save_generation_stats(stats):
 def parse_args():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="Continuous Story Generator Runner")
-    parser.add_argument('--duration', type=int, default=24, 
-                        help='Duration to run in hours (0 for unlimited)')
-    parser.add_argument('--count', type=int, default=10, 
+    parser.add_argument('--duration', type=float, default=2.34, 
+                        help='Duration to run in hours (0 for unlimited, can use fractional hours e.g. 2.5 for 2h30m)')
+    parser.add_argument('--count', type=int, default=0, 
                         help='Number of stories to generate (0 for unlimited)')
     return parser.parse_args()
 
@@ -90,8 +90,15 @@ def main():
     # Calculate end time if duration is specified
     start_time = datetime.datetime.now()
     if args.duration > 0:
-        end_time = start_time + datetime.timedelta(hours=args.duration)
-        logger.info(f"Running until: {end_time}")
+        # Convert hours to hours, minutes, seconds for more precise logging
+        hours = int(args.duration)
+        minutes = int((args.duration - hours) * 60)
+        seconds = int(((args.duration - hours) * 60 - minutes) * 60)
+        
+        # Calculate exact end time
+        end_time = start_time + datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
+        
+        logger.info(f"Running for {hours}h {minutes}m {seconds}s until: {end_time}")
     else:
         end_time = None
         logger.info("Running indefinitely (no time limit)")

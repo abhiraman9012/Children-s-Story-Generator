@@ -1,21 +1,26 @@
 name: Continuous Story Generator
 
 on:
+  # Run daily at midnight UTC (can be adjusted to your preferred time)
+  schedule:
+    - cron: '0 0 * * *'  # Format: minute hour day month day-of-week
+  
+  # Keep manual trigger option
   workflow_dispatch:
     inputs:
       duration:
         description: 'Duration to run in hours (0 for unlimited)'
         required: true
-        default: '24'
+        default: '2.34'  # Set default to 2 hours and 34 minutes
       stories_count:
         description: 'Number of stories to generate (0 for unlimited)'
         required: true
-        default: '10'
+        default: '0'  # Set to unlimited by default to focus on time
 
 jobs:
   generate-stories:
     runs-on: ubuntu-latest
-    timeout-minutes: 1440  # 24 hours max timeout
+    timeout-minutes: 154  # 2 hours and 34 minutes (2.34 hours * 60 = 140.4 minutes, rounded to 154 with buffer)
     
     steps:
       - name: Checkout code
@@ -44,10 +49,12 @@ jobs:
           
       - name: Run continuous story generator
         env:
-          DURATION_HOURS: ${{ github.event.inputs.duration }}
-          STORIES_COUNT: ${{ github.event.inputs.stories_count }}
+          # If triggered manually, use the input values; otherwise use scheduled values
+          DURATION_HOURS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.duration || '2.34' }}
+          STORIES_COUNT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.stories_count || '0' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          echo "Running for ${DURATION_HOURS} hours or until ${STORIES_COUNT} stories are generated (0 = unlimited)"
           python continuous_runner.py --duration $DURATION_HOURS --count $STORIES_COUNT
           
       - name: Upload generated content
