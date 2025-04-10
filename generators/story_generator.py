@@ -218,6 +218,26 @@ def generate(use_prompt_generator=True, prompt_input="Create a unique children's
             "max_output_tokens": 4096,
         },
         "safety_settings": safety_settings,
+        "tools": [
+            {
+                "function_declarations": [
+                    {
+                        "name": "generate_image",
+                        "description": "Generates an image based on the provided text prompt",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "prompt": {
+                                    "type": "string",
+                                    "description": "The text prompt to generate an image from"
+                                }
+                            },
+                            "required": ["prompt"]
+                        }
+                    }
+                ]
+            }
+        ]
     }
 
     # Track image load failures
