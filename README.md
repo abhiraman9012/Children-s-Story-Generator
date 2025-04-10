@@ -127,6 +127,48 @@ Copy and paste the following code into a Google Colab notebook cell to set up an
 !python main.py
 ```
 
+## 💪 GitHub Actions Automation
+
+This project can be run continuously using GitHub Actions to generate multiple stories without manual intervention.
+
+### Setting Up GitHub Actions
+
+1. **Configure Repository Secrets**
+   - Go to your GitHub repository → Settings → Secrets and variables → Actions
+   - Add a new repository secret named `GEMINI_API_KEY` with your Google Gemini API key
+
+2. **Run the Workflow**
+   - Go to the Actions tab in your repository
+   - Select "Continuous Story Generator" workflow
+   - Click "Run workflow"
+   - Configure parameters:
+     - **Duration**: Number of hours to run (0 for unlimited until GitHub's 6-hour timeout)
+     - **Stories Count**: Number of stories to generate (0 for unlimited)
+
+3. **Access Generated Content**
+   - After the workflow completes, go to the workflow run
+   - Download the "generated-stories" artifact
+   - The archive contains all stories, videos, thumbnails, and metadata files
+
+### How It Works
+
+The GitHub Actions workflow:
+1. Sets up a Python environment with all dependencies
+2. Installs FFmpeg for video processing
+3. Runs the `continuous_runner.py` script which:
+   - Generates stories in a loop
+   - Saves all content to organized directories
+   - Tracks statistics for each generation
+   - Continues until the specified time or count is reached
+
+### Customizing
+
+You can modify `.github/workflows/story_generator.yml` to:
+- Change the runner type (e.g., for higher performance)
+- Add additional environment variables
+- Configure different schedules (e.g., run daily)
+- Integrate with other services like AWS S3 for storage
+
 ## 🧠 Architecture & Code Flow
 
 ### Visual Architecture Diagram
